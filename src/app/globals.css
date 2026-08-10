@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@import "@xyflow/react/dist/style.css";
+
+:root {
+  color-scheme: dark;
+}
+
+@theme {
+  --color-bg: #0a0d12;
+  --color-surface: #0f141b;
+  --color-surface-2: #151c26;
+  --color-surface-3: #1b2430;
+  --color-border: #1e2631;
+  --color-border-strong: #2a3542;
+  --color-fg: #e7ecf3;
+  --color-fg-secondary: #9aa6b5;
+  --color-fg-muted: #5c6a7a;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #60a5fa;
+  --color-accent-soft: rgba(59, 130, 246, 0.14);
+  --color-success: #34d399;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}
+
+/* ------------------------------------------------ react-flow dark theme */
+.react-flow {
+  --xy-background-color: var(--color-bg);
+  --xy-edge-stroke: #2a3542;
+  --xy-edge-stroke-width: 1.5;
+  --xy-edge-stroke-selected: var(--color-accent);
+  --xy-connectionline-stroke: var(--color-accent);
+  --xy-attribution-background-color: transparent;
+  --xy-controls-button-background-color: var(--color-surface-2);
+  --xy-controls-button-background-color-hover: var(--color-surface-3);
+  --xy-controls-button-color: var(--color-fg-secondary);
+  --xy-controls-button-border-color: var(--color-border);
+  --xy-minimap-background-color: var(--color-bg);
+  --xy-minimap-mask-background-color: rgba(10, 13, 18, 0.7);
+  --xy-node-boxshadow-default: none;
+}
+
+.react-flow__background {
+  opacity: 0.5;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--color-accent);
+}
+
+.react-flow__controls {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.react-flow__controls button {
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* thin, unobtrusive scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* ---- node state animations (Calm Command Surface) ---- */
+@keyframes amber-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px #fbbf24,
+      inset 0 0 6px #fbbf2422;
+    opacity: 1;
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px #fbbf24,
+      inset 0 0 8px #fbbf2433;
+    opacity: 0.92;
+  }
+}
+.step-amber-ring {
+  animation: amber-pulse 2s ease-in-out infinite;
+}
+
+@keyframes running-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+  50% {
+    box-shadow: 0 0 0 6px #60a5fa;
+  }
+}
+.step-running-pulse {
+  animation: running-pulse 1.6s ease-in-out infinite;
+}
+
+/* faint overlay behind dimmed (non-focused) nodes */
+.react-flow .dim-overlay {
+  opacity: 0.42;
+}
