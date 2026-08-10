@@ -10,4 +10,5 @@ export const nhost = new NhostClient({
   ...(region ? { region } : {}),
 });
 
-export const BACKEND_URL = "https://local.hasura.local.nhost.run/v1";
+const regionSuffix = region ? `.${region}` : "";
+export const BACKEND_URL = `https://${subdomain}.graphql${regionSuffix}.nhost.run/v1`;
