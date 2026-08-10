@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useSignOut, useUserData } from "@nhost/react";
 import { useBuilder } from "@/store/builder";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +12,9 @@ import { cn } from "@/lib/cn";
 
 export function BuilderHeader() {
   const { workflow, isRunning, run, quota, activeRun, role, saveWorkflow } = useBuilder();
+  const router = useRouter();
+  const user = useUserData();
+  const { signOut } = useSignOut();
   const [name, setName] = useState<string | null>(null);
 
   const pct = quota && quota.limit > 0 ? Math.min(100, Math.round((quota.used / quota.limit) * 100)) : 0;
@@ -17,6 +22,11 @@ export function BuilderHeader() {
   const nearLimit = quota !== null && !exhausted && (quota.used / quota.limit) > 0.8;
   const canEdit = role === "owner" || role === "editor";
   const canRun = role !== "viewer";
+
+  async function onSignOut() {
+    await signOut();
+    router.replace("/login");
+  }
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-4">
@@ -90,6 +100,27 @@ export function BuilderHeader() {
             </div>
           </Tooltip>
         )}
+
+        {user && (
+          <span className="hidden max-w-[12rem] items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-[11px] text-fg-secondary sm:inline-flex">
+            <span className="size-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="truncate">{user.displayName || user.email}</span>
+          </span>
+        )}
+
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onSignOut}
+          aria-label="Sign out"
+        >
+          <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+          Sign out
+        </Button>
 
         <Button onClick={() => run()} disabled={isRunning || !workflow || exhausted || !canRun}>
           {isRunning ? (

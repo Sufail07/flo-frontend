@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useUserData } from "@nhost/react";
+import { useSignOut, useUserData } from "@nhost/react";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { Button } from "@/components/ui/button";
 import { createWorkflow, fetchMemberships, fetchWorkflows } from "@/lib/graphql";
@@ -12,6 +12,7 @@ import type { Workflow } from "@/lib/types";
 function WorkflowList() {
   const router = useRouter();
   const user = useUserData();
+  const { signOut } = useSignOut();
   const [workflows, setWorkflows] = useState<Workflow[] | null>(null);
   const [orgs, setOrgs] = useState<{ id: string; name: string; role: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +52,11 @@ function WorkflowList() {
     }
   }
 
+  async function onSignOut() {
+    await signOut();
+    router.replace("/login");
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <header className="mb-8 flex items-center justify-between">
@@ -60,13 +66,29 @@ function WorkflowList() {
             Build, run, and monitor your agentic workflows.
           </p>
         </div>
-        <Button
-          onClick={onNewWorkflow}
-          disabled={!canCreate || creating}
-          title={!canCreate ? "You need owner or editor access to create workflows" : undefined}
-        >
-          {creating ? "Creating…" : "New workflow"}
-        </Button>
+        <div className="flex items-center gap-3">
+          {user && (
+            <span className="hidden max-w-[14rem] items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-fg-secondary sm:inline-flex">
+              <span className="size-1.5 shrink-0 rounded-full bg-accent" />
+              <span className="truncate">{user.displayName || user.email}</span>
+            </span>
+          )}
+          <Button variant="secondary" onClick={onSignOut}>
+            <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg>
+            Sign out
+          </Button>
+          <Button
+            onClick={onNewWorkflow}
+            disabled={!canCreate || creating}
+            title={!canCreate ? "You need owner or editor access to create workflows" : undefined}
+          >
+            {creating ? "Creating…" : "New workflow"}
+          </Button>
+        </div>
       </header>
 
       {orgs.length > 0 && (
