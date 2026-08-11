@@ -8,7 +8,7 @@ export type StepType =
 
 export type TriggerType = "manual" | "webhook" | "scheduled" | "database_event";
 
-export type RunStatus = "pending" | "running" | "paused" | "succeeded" | "failed";
+export type RunStatus = "pending" | "running" | "paused" | "succeeded" | "failed" | "cancelled";
 export type StepRunStatus =
   | "pending"
   | "running"

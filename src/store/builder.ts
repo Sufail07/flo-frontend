@@ -6,7 +6,6 @@ import {
   deleteStep,
   fetchMemberships,
   fetchQuota,
-  fetchStepRuns,
   fetchWorkflow,
   insertStep,
   reorderSteps,
@@ -35,6 +34,7 @@ interface BuilderState {
   quota: { limit: number; used: number } | null;
   role: "owner" | "editor" | "viewer" | null;
   loading: boolean;
+  liveError: string | null;
   load: (id: string) => Promise<void>;
   selectStep: (id: string | null) => void;
   addStep: (type: StepType, name: string) => Promise<void>;
@@ -52,6 +52,7 @@ interface BuilderState {
   setStepRuns: (runs: StepRun[]) => void;
   setActiveRun: (run: WorkflowRun | null) => void;
   setRunError: (msg: string | null) => void;
+  setLiveError: (msg: string | null) => void;
 }
 
 export const useBuilder = create<BuilderState>((set, get) => ({
@@ -67,6 +68,7 @@ export const useBuilder = create<BuilderState>((set, get) => ({
   quota: null,
   role: null,
   loading: true,
+  liveError: null,
   async load(id) {
     set({ loading: true });
     try {
@@ -182,24 +184,27 @@ export const useBuilder = create<BuilderState>((set, get) => ({
     if (!wf || get().isRunning) return;
     set({ isRunning: true, runError: null, stepRuns: new Map(), activeRun: null });
     try {
+      // The Action only creates the run and returns its id — an Event Trigger
+      // executes the steps. Setting activeRun here mounts RunMonitor, so the
+      // step_runs subscription is open before execution begins and progress
+      // streams in live.
       const result = await triggerWorkflowRun(wf.id);
-      const run: WorkflowRun = {
-        id: result.run_id,
-        workflow_id: wf.id,
-        org_id: wf.org_id,
-        trigger_id: null,
-        trigger_type: "manual",
-        triggered_by: null,
-        status: result.status as WorkflowRun["status"],
-        input: {},
-        error: null,
-        started_at: null,
-        finished_at: null,
-        created_at: new Date().toISOString(),
-      };
-      set({ activeRun: run });
-      const runs = await fetchStepRuns(result.run_id);
-      set({ stepRuns: runsToMap(runs) });
+      set({
+        activeRun: {
+          id: result.run_id,
+          workflow_id: wf.id,
+          org_id: wf.org_id,
+          trigger_id: null,
+          trigger_type: "manual",
+          triggered_by: null,
+          status: result.status as WorkflowRun["status"],
+          input: {},
+          error: null,
+          started_at: null,
+          finished_at: null,
+          created_at: new Date().toISOString(),
+        },
+      });
     } catch (e) {
       set({ runError: e instanceof Error ? e.message : "Failed to start run" });
     } finally {
@@ -207,13 +212,13 @@ export const useBuilder = create<BuilderState>((set, get) => ({
     }
   },
 
-   async approve(stepRunId) {
+  // Approve/reject only record the decision — the run resumes out-of-band, so
+  // the live subscription (not a refetch here) delivers the remaining steps.
+  async approve(stepRunId) {
     if (get().approvingId) return;
     set({ approvingId: stepRunId });
     try {
-      const result = await approveStep(stepRunId);
-      const runs = await fetchStepRuns(result.run_id);
-      set({ stepRuns: runsToMap(runs) });
+      await approveStep(stepRunId);
     } catch (e) {
       set({ runError: e instanceof Error ? e.message : "Approval failed" });
     } finally {
@@ -225,9 +230,7 @@ export const useBuilder = create<BuilderState>((set, get) => ({
     if (get().rejectingId) return;
     set({ rejectingId: stepRunId });
     try {
-      const result = await rejectStepMutation(stepRunId, note);
-      const runs = await fetchStepRuns(result.run_id);
-      set({ stepRuns: runsToMap(runs) });
+      await rejectStepMutation(stepRunId, note);
     } catch (e) {
       set({ runError: e instanceof Error ? e.message : "Rejection failed" });
     } finally {
@@ -245,5 +248,9 @@ export const useBuilder = create<BuilderState>((set, get) => ({
 
   setRunError(msg) {
     set({ runError: msg });
+  },
+
+  setLiveError(msg) {
+    set({ liveError: msg });
   },
 }));

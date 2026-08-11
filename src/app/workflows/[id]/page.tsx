@@ -8,11 +8,12 @@ import { Palette } from "@/components/builder/palette";
 import { WorkflowCanvas } from "@/components/builder/workflow-canvas";
 import { Inspector } from "@/components/builder/inspector";
 import { RunMonitor } from "@/components/builder/run-monitor";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { useBuilder } from "@/store/builder";
 
 function Builder() {
   const { id } = useParams<{ id: string }>();
-  const { load, workflow, activeRun, loading, runError, setRunError } = useBuilder();
+  const { load, workflow, activeRun, loading, runError, setRunError, liveError } = useBuilder();
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,6 +40,12 @@ function Builder() {
       {loadError && (
         <div className="border-b border-danger/30 bg-danger/10 px-4 py-2 text-sm text-danger">
           {loadError}
+        </div>
+      )}
+      {liveError && (
+        <div className="flex items-center gap-2 border-b border-warning/30 bg-warning/10 px-4 py-2 text-sm text-warning">
+          <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-warning" />
+          {liveError}
         </div>
       )}
 
@@ -72,7 +79,9 @@ function Builder() {
 export default function WorkflowPage() {
   return (
     <RequireAuth>
-      <Builder />
+      <ErrorBoundary>
+        <Builder />
+      </ErrorBoundary>
     </RequireAuth>
   );
 }

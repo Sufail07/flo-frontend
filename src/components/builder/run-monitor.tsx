@@ -55,18 +55,20 @@ const RUN_SUBSCRIPTION = /* GraphQL */ `
 `;
 
 export function RunMonitor({ runId }: { runId: string }) {
-  const { setStepRuns, setActiveRun, workflow } = useBuilder();
+  const { setStepRuns, setActiveRun, setLiveError, workflow } = useBuilder();
 
   const stepRunVars = useMemo(() => ({ runId }), [runId]);
 
   useEffect(() => {
     fetchStepRuns(runId).then((runs) => setStepRuns(runs)).catch(() => {});
-    fetchLatestRuns(workflow?.id ?? "", 1)
-      .then((runs) => {
-        const run = runs.find((r) => r.id === runId);
-        if (run) setActiveRun(run);
-      })
-      .catch(() => {});
+    if (workflow?.id) {
+      fetchLatestRuns(workflow.id, 1)
+        .then((runs) => {
+          const run = runs.find((r) => r.id === runId);
+          if (run) setActiveRun(run);
+        })
+        .catch(() => {});
+    }
   }, [runId, setStepRuns, setActiveRun, workflow?.id]);
 
   useGraphQLSubscription<{ step_runs: StepRun[] }>(
@@ -74,6 +76,7 @@ export function RunMonitor({ runId }: { runId: string }) {
     stepRunVars,
     (data) => setStepRuns(data.step_runs),
     true,
+    setLiveError,
   );
 
   useGraphQLSubscription<{ workflow_runs_by_pk: WorkflowRun | null }>(
@@ -83,6 +86,7 @@ export function RunMonitor({ runId }: { runId: string }) {
       if (data.workflow_runs_by_pk) setActiveRun(data.workflow_runs_by_pk);
     },
     true,
+    setLiveError,
   );
 
   return null;

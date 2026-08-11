@@ -22,6 +22,9 @@ export function BuilderHeader() {
   const nearLimit = quota !== null && !exhausted && (quota.used / quota.limit) > 0.8;
   const canEdit = role === "owner" || role === "editor";
   const canRun = role !== "viewer";
+  // Execution outlives the trigger request now, so the live run status — not the
+  // mutation promise — is what says whether a run is still in flight.
+  const inFlight = activeRun?.status === "pending" || activeRun?.status === "running";
 
   async function onSignOut() {
     await signOut();
@@ -122,11 +125,11 @@ export function BuilderHeader() {
           Sign out
         </Button>
 
-        <Button onClick={() => run()} disabled={isRunning || !workflow || exhausted || !canRun}>
-          {isRunning ? (
+        <Button onClick={() => run()} disabled={isRunning || inFlight || !workflow || exhausted || !canRun}>
+          {isRunning || inFlight ? (
             <>
               <span className="size-3 animate-spin rounded-full border-[1.5px] border-white/30 border-t-white" />
-              Starting…
+              {isRunning ? "Starting…" : "Running…"}
             </>
           ) : (
             <>

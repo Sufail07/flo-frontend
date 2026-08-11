@@ -10,9 +10,11 @@ export function useGraphQLSubscription<T>(
   variables: Record<string, unknown> | null,
   onData: (data: T) => void,
   enabled = true,
+  onError?: (message: string | null) => void,
 ) {
   const token = useAccessToken();
   const onDataEvent = useEffectEvent(onData);
+  const onErrorEvent = useEffectEvent((message: string | null) => onError?.(message));
 
   useEffect(() => {
     if (!enabled || !variables || !token) return;
@@ -37,6 +39,16 @@ export function useGraphQLSubscription<T>(
         },
         lazy: true,
         retryAttempts: 5,
+        // Without this a dropped socket is indistinguishable from an idle run:
+        // the UI just stops updating and looks like nothing is happening.
+        on: {
+          connected: () => {
+            if (!closed) onErrorEvent(null);
+          },
+          closed: () => {
+            if (!closed) onErrorEvent("Live updates disconnected — reconnecting…");
+          },
+        },
       });
 
       const unsubscribe = client.subscribe(
@@ -46,9 +58,21 @@ export function useGraphQLSubscription<T>(
         },
         {
           next: (payload) => {
-            if (payload?.data && !closed) onDataEvent(payload.data as T);
+            if (payload?.data && !closed) {
+              onErrorEvent(null);
+              onDataEvent(payload.data as T);
+            }
           },
-          error: () => {},
+          error: (err) => {
+            if (closed) return;
+            const message =
+              err instanceof Error
+                ? err.message
+                : Array.isArray(err)
+                  ? err.map((e) => e?.message ?? String(e)).join("; ")
+                  : "Live updates failed";
+            onErrorEvent(message);
+          },
           complete: () => {},
         },
       );
